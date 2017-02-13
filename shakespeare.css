@@ -1,0 +1,45 @@
+
+h1 {
+	margin: auto;
+	font-size: 80px;
+	font-family: 'Monotype Corsiva';
+	font-weight: thin;
+	width: 100%;
+	height: 100px;
+	color: white;
+	text-align: center;
+	padding: 40px 0 0 0;
+}
+
+h2 {
+	font-family: 'Monotype Corsiva';
+	margin: auto;
+	width: 500px;
+	color: white;
+	text-align: center;
+}
+
+#input {
+	margin: auto;
+	color: white;
+	text-align: center;
+	font-family: Georgia, sans-serif;
+}
+
+#response_area{
+	margin: auto;
+	color: white;
+	font-family: 'Monotype Corsiva';
+	font-size: 25px;
+	text-align: center;
+}
+
+body {
+
+    background-image: -webkit-linear-gradient(45deg, black, #313233);
+	justify-content: center;
+}
+
+p {
+
+}

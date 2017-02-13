@@ -1,0 +1,54 @@
+#MakeFile to build and deploy the Sample US CENSUS Name Data using ajax
+# For CSC3004 Software Development
+
+# Put your user name below:
+USER= bastingp
+
+CC= g++
+
+#For Optimization
+#CFLAGS= -O2
+#For debugging
+CFLAGS= -g
+
+RM= /bin/rm -f
+
+all: shakesserver testclient shakesfetchajax PutCGI PutHTML
+#all: nameserver testclient 
+
+testclient.o: testclient.cpp fifo.h
+	$(CC) -c $(CFLAGS) testclient.cpp
+
+shakesserver.o: shakesserver.cpp fifo.h
+	$(CC) -c $(CFLAGS) shakesserver.cpp
+
+shakesfetchajax.o: shakesfetchajax.cpp fifo.h
+	$(CC) -c $(CFLAGS) shakesfetchajax.cpp
+
+testclient: testclient.o fifo.o
+	$(CC) testclient.o fifo.o -o testclient
+
+shakesserver: shakesserver.o fifo.o
+	$(CC) shakesserver.o  fifo.o -o shakesserver
+
+fifo.o:		fifo.cpp fifo.h
+		g++ -c fifo.cpp
+shakesfetchajax: shakesfetchajax.o  fifo.h
+	$(CC) shakesfetchajax.o  fifo.o -o shakesfetchajax -L/usr/local/lib -lcgicc
+
+PutCGI: shakesfetchajax
+	chmod 757 shakesfetchajax
+	cp shakesfetchajax /usr/lib/cgi-bin/$(USER)_shakesfetchajax.cgi 
+
+	echo "Current contents of your cgi-bin directory: "
+	ls -l /usr/lib/cgi-bin/
+
+PutHTML:
+	cp shakesSearch.html /var/www/html/class/softdev/$(USER)/project2
+	cp shakespeare.css /var/www/html/class/softdev/$(USER)/project2
+
+	echo "Current contents of your HTML directory: "
+	ls -l /var/www/html/class/softdev/$(USER)/project2
+
+clean:
+	rm -f *.o shakes_stats_ajax shakesserver testclient

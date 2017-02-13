@@ -1,0 +1,58 @@
+<HTML>
+<head>
+	<TITLE>Shakespeare Wordsearch</TITLE>
+	<META AUTHOR="Preston Basting"></META>
+	<link rel="stylesheet" type="text/css" href="shakespeare.css">
+</head>
+
+<script type = "text/javascript">
+var XMLHttp;
+if(navigator.appName == "Microsoft Internet Explorer") {
+    XMLHttp = new ActiveXObject("Microsoft.XMLHTTP");
+} else {
+    XMLHttp = new XMLHttpRequest();
+}
+
+
+function getresponse () {
+
+     var name = document.getElementById('name').value;		     
+     if (name.length < 1) return;
+
+    XMLHttp.open("GET", "/cgi-bin/bastingp_shakesfetchajax.cgi?" //change to match correct cgi
+						 + "&name=" + name
+						 ,true);
+    XMLHttp.onreadystatechange=function() {
+    var para = "";
+//    do{
+		       
+      para = XMLHttp.responseText;
+      document.getElementById('response_area').innerHTML = para;;
+//    } while (para.find("$END" == string::npos));
+        }
+	XMLHttp.send(null);
+}
+
+</script>
+
+<body>
+<h1>Shakespeare</h1>
+<h2>Word Lookup Program</h2>
+
+<div id = "input">
+<hr>
+Enter a word to search for in all the works of Shakespeare <br>
+Every line containing a match will be displayed
+
+
+<p>
+  <INPUT NAME="name" TYPE="text" id=name MAXLENGTH=30></TD>
+  <input type="button" onclick="javascript: getresponse ()" name="submit" value="Submit" />
+</p>
+</hr>
+</div>
+<div id = "response_area">
+  </div>
+
+</body>
+</HTML>

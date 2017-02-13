@@ -1,0 +1,171 @@
+/***************************************************************************
+* nameservercpp  -  Program to serve of last name statistics
+ *
+* copyright : (C) 2009 by Jim Skon
+*
+* This program runs as a background server to a CGI program, providinging US Census
+* Data on the frequency of names in response to requestes.  The rational for this 
+* is to demonstrait how a background process can serve up information to a web program,
+* saving the web program from the work of intiallizing large data structures for every
+* call.
+* 
+* 
+*
+***************************************************************************/
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <fstream>
+#include <map>
+#include "fifo.h"
+
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+#include <cctype>
+#include <utility>
+
+#include "english_stem.h"
+
+using namespace std;
+
+map<string, vector<int> > ss_map;
+
+void buildMap(istream& ss);
+//text file stream is input
+//each word is indexed in a map with the corresponding line position
+
+void processLine(string& line);
+//a string is input
+//the string is changed to remove all punctuation, case, and numbers
+
+vector <int> indexSearch(string word);
+//a string is input
+//the indexes of the string in the map are returned
+
+
+string returnMatch(istream& ss, int index);
+
+/* Fifo names */
+string receive_fifo = "Namerequest";
+string send_fifo = "Namereply";
+
+/*modify the returnMatches to return only one line from a given index
+ loop through each index for the indexSearch and return the appropriate line
+ ending with a $END*/
+
+///////////////////////////////////////////////////////////////////////////////
+
+int main(){
+  Fifo recfifo(receive_fifo);
+  Fifo sendfifo(send_fifo);
+  
+  ifstream ssfile;
+  ssfile.open("/home/class/SoftDev/Shakespeare/Shakespeare.txt"); //opens file
+  if (!ssfile.is_open()) {
+    cout <<"File not Found" << endl;
+    return 0;
+    }
+  
+  string word;
+  buildMap(ssfile);
+  ssfile.close();
+  ssfile.open("/home/class/SoftDev/Shakespeare/Shakespeare.txt");
+  
+  string inMessage, outMessage;
+  vector <int> index;
+  int pos;
+  while(1){
+    recfifo.openread();
+    inMessage = recfifo.recv();
+    pos = 0;
+    index = indexSearch(inMessage);
+    sendfifo.openwrite();
+    if (index.size() == 0){
+        outMessage = "No Matches";
+	sendfifo.send(outMessage);
+    }
+    for(int x= 0; x < index.size(); x++ ){
+        outMessage = returnMatch(ssfile, index[x]);
+	cout << outMessage << endl;
+	sendfifo.send(outMessage);
+    }
+    outMessage = "$END";
+    cout << outMessage << endl;
+    sendfifo.send(outMessage);
+    //outMessage = returnMatches(ssfile, indexSearch(inMessage));
+    //sendfifo.openwrite();
+    //sendfifo.send(outMessage);
+    sendfifo.fifoclose();
+    recfifo.fifoclose();
+  }
+  return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+//Functions//
+
+void buildMap(istream& ss){
+    string word, line;
+    int position=0;
+    while(!ss.fail()){
+        getline(ss, line);//gets next line
+        processLine(line); //removes punct, digits, makes lowercase
+        istringstream lineStream(line); //creates string stream of line
+        while(lineStream >> word){
+            ss_map[word].push_back(position); //adds word and line position
+    }
+    position = ss.tellg(); //gets position of next line
+    }
+}
+
+void processLine(string& line){
+    
+    transform(line.begin(), line.end(), line.begin(), ::toupper); //makes line
+                                                                  //uppercase
+    int length = line.size();
+    for (int x = 0; x < length; x++){   //
+        if(ispunct(line[x])){           //Removes Punctuation
+            line.erase(x--, 1);         //
+            length = line.size();       //
+        }
+    }
+
+    for (int x = 0; x < length; x++){   //
+        if(isdigit(line[x])){           //Removes Digits
+            line.erase(x--, 1);         //
+            length = line.size();       //
+        }
+    }
+}
+
+
+vector <int> indexSearch(string word){
+    map<string, vector<int> > ::iterator it;
+    stemming::english_stem<char, std::char_traits<char> > stem;
+    vector<int> blank;//return when no matches occur
+    processLine(word);//removes case, punct and digits
+    stem(word); //stems the searched word
+    it = ss_map.find(word); //prevents the creation of a new entry
+    if (it == ss_map.end()){
+        return(blank);
+    } else {
+        return (ss_map[word]); //vector of line positions for word
+    }
+}
+
+
+string returnMatch(istream& ss, int index){
+    string line;
+    string matches;
+    ss.seekg(index, ss.beg); //moves to line position from beginning
+    getline(ss, line); //assigns the line to a string
+    return line;
+}
